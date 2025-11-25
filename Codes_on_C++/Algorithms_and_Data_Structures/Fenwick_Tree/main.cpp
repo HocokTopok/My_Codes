@@ -3,13 +3,15 @@
 
 class FenwickTree {
  public:
+  FenwickTree(int size) : fenwick_(size + 1, 0) {}
+
   FenwickTree(std::vector<int> numbers) : fenwick_(numbers.size() + 1, 0) {
-    for (int i = 0; i < numbers.size(); ++i) {
+    for (size_t i = 0; i < numbers.size(); ++i) {
       Update(i + 1, numbers[i]);
     }
   }
 
-  int RangeSum(int left, int right) {
+  int RangeSum(size_t left, size_t right) {
     if (left > right) {
       return 0;
     }
@@ -19,14 +21,14 @@ class FenwickTree {
  private:
   std::vector<int> fenwick_;
 
-  void Update(int index, int delta) {
+  void Update(size_t index, int delta) {
     while (index < fenwick_.size()) {
       fenwick_[index] += delta;
       index += index & -index;
     }
   }
 
-  int Query(int index) {
+  int Query(size_t index) {
     int sum = 0;
     while (index > 0) {
       sum += fenwick_[index];
