@@ -2,23 +2,6 @@
 #include <iostream>
 #include <vector>
 
-struct Node {
-  int mood;
-  int priority;
-  int size;
-  int64_t sum;
-  Node* left;
-  Node* right;
-
-  Node(int number)
-      : mood(number),
-        priority(std::rand()),
-        size(1),
-        sum(number),
-        left(nullptr),
-        right(nullptr) {}
-};
-
 class Treap {
  public:
   Treap() : root_(nullptr) { std::srand(std::time(0)); }
@@ -55,6 +38,23 @@ class Treap {
   }
 
  private:
+  struct Node {
+    int mood;
+    int priority;
+    int size;
+    int64_t sum;
+    Node* left;
+    Node* right;
+
+    Node(int number)
+        : mood(number),
+          priority(std::rand()),
+          size(1),
+          sum(number),
+          left(nullptr),
+          right(nullptr) {}
+  };
+  
   Node* root_;
 
   static void Update(Node* node) {
