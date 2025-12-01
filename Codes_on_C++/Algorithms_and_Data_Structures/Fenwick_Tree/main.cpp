@@ -3,7 +3,7 @@
 
 class FenwickTree {
  public:
-  FenwickTree(int size) : fenwick_(size + 1, 0) {}
+  FenwickTree(size_t size) : fenwick_(size + 1, 0) {}
 
   FenwickTree(std::vector<int> numbers) : fenwick_(numbers.size() + 1, 0) {
     for (size_t i = 0; i < numbers.size(); ++i) {
