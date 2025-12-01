@@ -1,14 +1,11 @@
-#include <algorithm>
 #include <iostream>
-#include <map>
-#include <string>
 #include <vector>
 
 const int kINF = 1e9;
 
 class SegmentTreeMin {
  public:
-  SegmentTreeMin(int size) {
+  SegmentTreeMin(size_t size) {
     bin_size_ = 1;
     while (bin_size_ < size) {
       bin_size_ *= 2;
@@ -16,23 +13,18 @@ class SegmentTreeMin {
     data_.assign(2 * bin_size_, kINF);
   }
 
-  void Update(int index, int state) {
-    int station_index = index + bin_size_;
-    if (state == 1) {
-      data_[station_index] = index;
-    } else {
-      data_[station_index] = kINF;
-    }
+  void Update(size_t index, int value) {
+    index += bin_size_;
+    data_[index] = value;
+    index /= 2;
 
-    station_index /= 2;
-    while (station_index != 0) {
-      data_[station_index] =
-          std::min(data_[station_index * 2], data_[station_index * 2 + 1]);
-      station_index /= 2;
+    while (index != 0) {
+      data_[index] = std::min(data_[index * 2], data_[index * 2 + 1]);
+      index /= 2;
     }
   }
 
-  int Query(int left, int right) {
+  int Query(size_t left, size_t right) {
     if (left > right) {
       return kINF;
     }
@@ -59,6 +51,11 @@ class SegmentTreeMin {
   }
 
  private:
-  int bin_size_;
+  size_t bin_size_;
   std::vector<int> data_;
 };
+
+int main() {
+    std::cout << "Segment Tree RMQ Test" << "\n";
+    return 0;
+}

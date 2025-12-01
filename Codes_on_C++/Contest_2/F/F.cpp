@@ -1,23 +1,65 @@
+#include <functional>
 #include <iostream>
 #include <string>
 #include <vector>
 
-struct Node {
-  int mood;
-  Node* left;
-  Node* right;
-  int height;
-  int size;
-
-  Node(int number)
-      : mood(number), left(nullptr), right(nullptr), height(1), size(1) {}
-};
-
+template <typename Key, typename Compare = std::less<Key>>
 class AVLtree {
  public:
   AVLtree() : root_(nullptr) {}
 
+  AVLtree(const AVLtree& other) : root_(Copy(other.root_)) {}
+
+  AVLtree& operator=(const AVLtree& other) {
+    if (this != &other) {
+      Clear(root_);
+      root_ = Copy(other.root_);
+    }
+    return *this;
+  }
+
   ~AVLtree() { Clear(root_); }
+
+  void Insert(const Key& mood) { root_ = Insert(root_, mood); }
+
+  void Delete(const Key& mood) { root_ = Delete(root_, mood); }
+
+  std::string Exists(const Key& mood) {
+    return Exists(root_, mood) ? "true" : "false";
+  }
+
+  std::string Next(const Key& mood) { return Next(root_, mood); }
+
+  std::string Prev(const Key& mood) { return Prev(root_, mood); }
+
+  std::string Kth(const int kOrder) { return Kth(root_, kOrder); }
+
+ private:
+  struct Node {
+    int mood;
+    Node* left;
+    Node* right;
+    int height;
+    int size;
+
+    Node(int number)
+        : mood(number), left(nullptr), right(nullptr), height(1), size(1) {}
+  };
+
+  Node* root_;
+  Compare comp_;
+
+  static Node* Copy(Node* node) {
+    if (node == nullptr) {
+      return nullptr;
+    }
+    Node* new_node = new Node(node->mood);
+    new_node->height = node->height;
+    new_node->size = node->size;
+    new_node->left = Copy(node->left);
+    new_node->right = Copy(node->right);
+    return new_node;
+  }
 
   static void Clear(Node* node) {
     if (node != nullptr) {
@@ -26,32 +68,6 @@ class AVLtree {
       delete node;
     }
   }
-
-  void Insert(int mood) { root_ = Insert(root_, mood); }
-
-  void Delete(int mood) { root_ = Delete(root_, mood); }
-
-  std::string Exists(int mood) {
-    return Exists(root_, mood) ? "true" : "false";
-  }
-
-  std::string Next(int mood) {
-    int result = Next(root_, mood);
-    return result == -1 ? "none" : std::to_string(result);
-  }
-
-  std::string Prev(int mood) {
-    int result = Prev(root_, mood);
-    return result == -1 ? "none" : std::to_string(result);
-  }
-
-  std::string Kth(int mood) {
-    int result = Kth(root_, mood);
-    return result == -1 ? "none" : std::to_string(result);
-  }
-
- private:
-  Node* root_;
 
   static int GetHeight(Node* node) {
     return node != nullptr ? node->height : 0;
@@ -97,7 +113,7 @@ class AVLtree {
     return x_node;
   }
 
-  static Node* Balance(Node* node) {
+  static Node* RebalanceSubtree(Node* node) {
     if (node == nullptr) {
       return node;
     }
@@ -137,17 +153,16 @@ class AVLtree {
       return new Node(mood);
     }
 
-    if (mood < node->mood) {
+    if (comp_(mood, node->mood)) {
       node->left = Insert(node->left, mood);
-    } else if (mood > node->mood) {
+    } else if (comp_(node->mood, mood)) {
       node->right = Insert(node->right, mood);
     } else {
       return node;
     }
 
     Update(node);
-
-    return Balance(node);
+    return RebalanceSubtree(node);
   }
 
   Node* Delete(Node* node, int mood) {
@@ -155,9 +170,9 @@ class AVLtree {
       return node;
     }
 
-    if (mood < node->mood) {
+    if (comp_(mood, node->mood)) {
       node->left = Delete(node->left, mood);
-    } else if (mood > node->mood) {
+    } else if (comp_(node->mood, mood)) {
       node->right = Delete(node->right, mood);
     } else {
       if (node->left == nullptr || node->right == nullptr) {  // 0/1
@@ -177,8 +192,7 @@ class AVLtree {
     }
 
     Update(node);
-
-    return Balance(node);
+    return RebalanceSubtree(node);
   }
 
   bool Exists(Node* node, int mood) {
@@ -186,61 +200,61 @@ class AVLtree {
       return false;
     }
 
-    if (node->mood > mood) {
+    if (comp_(mood, node->mood)) {
       return Exists(node->left, mood);
     }
-    if (node->mood < mood) {
+    if (comp_(node->mood, mood)) {
       return Exists(node->right, mood);
     }
     return true;
   }
 
-  static int Next(Node* node, int mood) {
-    int result = -1;
+  std::string Next(Node* node, int mood) {
+    Node* result = nullptr;
     Node* current = node;
 
     while (current != nullptr) {
-      if (current->mood > mood) {
-        result = current->mood;
+      if (comp_(mood, current->mood)) {
+        result = current;
         current = current->left;
       } else {
         current = current->right;
       }
     }
 
-    return result;
+    return result == nullptr ? "none" : std::to_string(result->mood);
   }
 
-  static int Prev(Node* node, int mood) {
-    int result = -1;
+  std::string Prev(Node* node, int mood) {
+    Node* result = nullptr;
     Node* current = node;
 
     while (current != nullptr) {
-      if (current->mood < mood) {
-        result = current->mood;
+      if (comp_(current->mood, mood)) {
+        result = current;
         current = current->right;
       } else {
         current = current->left;
       }
     }
 
-    return result;
+    return result == nullptr ? "none" : std::to_string(result->mood);
   }
 
-  int Kth(Node* node, int order) {
-    if (node == nullptr || order < 0 || order >= node->size) {
-      return -1;
+  std::string Kth(Node* node, int k_order) {
+    if (node == nullptr || k_order < 0 || k_order >= node->size) {
+      return "none";
     }
 
     int left = GetSize(node->left);
 
-    if (order < left) {
-      return Kth(node->left, order);
+    if (k_order < left) {
+      return Kth(node->left, k_order);
     }
-    if (order > left) {
-      return Kth(node->right, order - left - 1);
+    if (k_order > left) {
+      return Kth(node->right, k_order - left - 1);
     }
-    return node->mood;
+    return std::to_string(node->mood);
   }
 };
 
@@ -260,7 +274,7 @@ Data Input() {
 }
 
 std::vector<std::string> Process(Data& data) {
-  AVLtree avl;
+  AVLtree<int> avl;
   std::vector<std::string> results;
 
   for (std::pair<std::string, int>& pair : data.queries) {
