@@ -1,125 +1,152 @@
-// Нерабочий код
 #include <iostream>
-#include <vector>
+#include <random>
 
-class FenwickTree {
+class Treap {
  public:
-  FenwickTree(size_t size) : fenwick_(size + 1, 0) {}
+  Treap() : root_(nullptr) {}
 
-  int64_t RangeSum(size_t left, size_t right) const {
-    if (left > right) {
-      return 0;
+  ~Treap() { Delete(root_); }
+
+  void AddElement(size_t index, int value) {
+    if (root_ == nullptr) {
+      root_ = new Node(value);
+      return;
     }
-    return Query(right) - Query(left - 1);
+    auto [left, right] = Split(root_, index);
+    root_ = Merge(Merge(left, new Node(value)), right);
   }
 
-  void Update(size_t index, int64_t delta) {
-    while (index < fenwick_.size()) {
-      fenwick_[index] += delta;
-      index += index & -index;
-    }
+  void Cut(Treap& other, size_t start, size_t end) {
+    auto [tmp, right] = Split(root_, end / 2);
+    auto [left, change] = Split(tmp, (start - 1) / 2);
+
+    auto [tmp_other, right_other] = Split(other.root_, (end + 1) / 2);
+    auto [left_other, change_other] = Split(tmp_other, start / 2);
+
+    root_ = Merge(left, Merge(change_other, right));
+    other.root_ = Merge(left_other, Merge(change, right_other));
+  }
+
+  long long GetSum(size_t left, size_t right) {
+    auto [tmp, second] = Split(root_, right / 2);
+    auto [first, main] = Split(tmp, left / 2);
+    long long answer = Summa(main);
+    root_ = Merge(first, Merge(main, second));
+    return answer;
   }
 
  private:
-  std::vector<int64_t> fenwick_;
+  struct Node {
+    int value;
+    int priority;
+    size_t size;
+    long long summa;
+    Node* left;
+    Node* right;
 
-  int64_t Query(size_t index) const {
-    int64_t result = 0;
-    while (index > 0) {
-      result += fenwick_[index];
-      index -= index & -index;
-    }
-    return result;
-  }
-};
+    Node(int value)
+        : value(value),
+          priority(rand()),
+          size(1),
+          summa(value),
+          left(nullptr),
+          right(nullptr) {}
+  };
 
-class DoubleFenwickTree {
- public:
-  DoubleFenwickTree(size_t size)
-      : first_elements_((size + 1) / 2), second_elements_(size / 2) {}
+  Node* root_;
 
-  void SetValue(size_t index, int64_t new_value) {
-    if (index % 2 == 1) {
-      size_t local_index = index / 2 + 1;
-      int64_t old_value = first_elements_.RangeSum(local_index, local_index);
-      first_elements_.Update(local_index, new_value - old_value);
-    } else {
-      size_t local_index = index / 2;
-      int64_t old_value = second_elements_.RangeSum(local_index, local_index);
-      second_elements_.Update(local_index, new_value - old_value);
-    }
+  static size_t Size(Node* node) { return (node == nullptr ? 0 : node->size); }
+
+  static long long Summa(Node* node) {
+    return (node == nullptr ? 0 : node->summa);
   }
 
-  int64_t GetSum(size_t left, size_t right) const {
-    size_t first_left = left / 2 + 1;
-    size_t first_right = (right + 1) / 2;
+  static bool IsEmpty(Node* node) { return (node == nullptr); }
 
-    size_t second_left = (left + 1) / 2;
-    size_t second_right = right / 2;
-
-    return first_elements_.RangeSum(first_left, first_right) +
-           second_elements_.RangeSum(second_left, second_right);
+  static void Update(Node* node) {
+    if (node == nullptr) {
+      return;
+    }
+    node->size = 1 + Size(node->left) + Size(node->right);
+    node->summa = +node->value + Summa(node->left) + Summa(node->right);
   }
 
-  void SwapPairs(size_t left, size_t right) {
-    size_t pairs_count = (right - left + 1) / 2;
-
-    for (size_t i = 0; i < pairs_count; ++i) {
-      size_t first_index = left + 2 * i;
-      size_t second_index = first_index + 1;
-
-      int64_t first_value = GetValue(first_index);
-      int64_t second_value = GetValue(second_index);
-
-      SetValue(first_index, second_value);
-      SetValue(second_index, first_value);
+  void Delete(Node* node) {
+    if (node == nullptr) {
+      return;
     }
+    Delete(node->left);
+    Delete(node->right);
+    delete node;
   }
 
- private:
-  FenwickTree first_elements_;
-  FenwickTree second_elements_;
-
-  int64_t GetValue(size_t index) const {
-    if (index % 2 == 1) {
-      return first_elements_.RangeSum(index / 2 + 1, index / 2 + 1);
+  Node* Merge(Node* left, Node* right) {
+    if (left == nullptr) {
+      return right;
     }
-    return second_elements_.RangeSum(index / 2, index / 2);
+    if (right == nullptr) {
+      return left;
+    }
+    if (left->priority < right->priority) {
+      right->left = Merge(left, right->left);
+      Update(right);
+      return right;
+    }
+    left->right = Merge(left->right, right);
+    Update(left);
+    return left;
+  }
+
+  std::pair<Node*, Node*> Split(Node* node, size_t index) {
+    if (node == nullptr) {
+      return {nullptr, nullptr};
+    }
+    if (Size(node->left) + 1 <= index) {
+      auto [left, right] = Split(node->right, index - Size(node->left) - 1);
+      node->right = left;
+      Update(node);
+      return {node, right};
+    }
+    auto [left, right] = Split(node->left, index);
+    node->left = right;
+    Update(node);
+    return {left, node};
   }
 };
 
 int main() {
-  size_t count = 1;
-  size_t elements_count;
-  size_t queries_count;
-  std::cin >> elements_count >> queries_count;
-
-  while (elements_count != 0) {
-    std::cout << "Swapper " << count << ":\n";
-    DoubleFenwickTree tree(elements_count);
-
-    for (size_t i = 1; i <= elements_count; ++i) {
-      int64_t new_element;
-      std::cin >> new_element;
-      tree.SetValue(i, new_element);
+  size_t size;
+  int query;
+  int cnt = 1;
+  std::cin >> size >> query;
+  while (size != 0 || query != 0) {
+    Treap even_indexes;
+    Treap uneven_indexes;
+    std::cout << "Swapper " << cnt << ":\n";
+    for (size_t ix = 0; ix < size; ++ix) {
+      int value;
+      std::cin >> value;
+      if (ix % 2 == 0) {
+        uneven_indexes.AddElement(ix, value);
+      } else {
+        even_indexes.AddElement(ix, value);
+      }
     }
-
-    while (queries_count != 0) {
-      size_t type;
+    for (int i = 0; i < query; ++i) {
+      int type;
       size_t left;
       size_t right;
-
       std::cin >> type >> left >> right;
-
-      if (type == 1) {
-        tree.SwapPairs(left, right);
-      } else {
-        std::cout << tree.GetSum(left, right) << "\n";
+      if (type == 2) {
+        std::cout << uneven_indexes.GetSum(left, right + 1) +
+                         even_indexes.GetSum(left - 1, right)
+                  << '\n';
       }
-      --queries_count;
+      if (type == 1) {
+        even_indexes.Cut(uneven_indexes, left, right);
+      }
     }
-
-    ++count;
-    std::cin >> elements_count >> queries_count;
+    std::cin >> size >> query;
+    ++cnt;
   }
 }
