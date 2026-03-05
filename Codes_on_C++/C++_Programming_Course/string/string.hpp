@@ -18,31 +18,24 @@ class String {
   void Clear();
   void PushBack(char character);
   void PopBack();
-  void Resize(size_t new_size);
-  void Resize(size_t new_size, char character);
+  void Resize(size_t new_size, char character = '\0');
   void Reserve(size_t new_cap);
   void ShrinkToFit();
   void Swap(String& other);
 
-  char& operator[](size_t index);
-  const char& operator[](size_t index) const;
-  char& Front();
-  const char& Front() const;
-  char& Back();
-  const char& Back() const;
+  char& operator[](size_t index) { return data_[index]; }
+  const char& operator[](size_t index) const { return data_[index]; }
 
-  bool Empty() const;
-  size_t Size() const;
-  size_t Capacity() const;
-  char* Data();
-  const char* Data() const;
+  char& Front() { return data_[0]; }
+  const char& Front() const { return data_[0]; }
+  char& Back() { return data_[size_ - 1]; }
+  const char& Back() const { return data_[size_ - 1]; }
 
-  bool operator<(const String& other) const;
-  bool operator>(const String& other) const;
-  bool operator<=(const String& other) const;
-  bool operator>=(const String& other) const;
-  bool operator==(const String& other) const;
-  bool operator!=(const String& other) const;
+  bool Empty() const { return size_ == 0; }
+  size_t Size() const { return size_; }
+  size_t Capacity() const { return capacity_; }
+  char* Data() { return data_; }
+  const char* Data() const { return data_; }
 
   String& operator*=(size_t num);
   String& operator+=(const String& other);
@@ -53,14 +46,20 @@ class String {
 
  private:
   void Changecap(size_t new_capacity);
-  static bool Isseparator(char character);
   void Addstring(std::vector<String>& temp, size_t start_pos,
                  size_t last_pos) const;
 
-  char* data_ = nullptr;
-  size_t capacity_ = 0;
   size_t size_ = 0;
+  size_t capacity_ = 0;
+  char* data_ = nullptr;
 };
+
+bool operator<(const String& lhs, const String& rhs);
+bool operator>(const String& lhs, const String& rhs);
+bool operator<=(const String& lhs, const String& rhs);
+bool operator>=(const String& lhs, const String& rhs);
+bool operator==(const String& lhs, const String& rhs);
+bool operator!=(const String& lhs, const String& rhs);
 
 String operator*(size_t num, const String& str) = delete;
 String operator+(const String& lhs, const String& rhs);
